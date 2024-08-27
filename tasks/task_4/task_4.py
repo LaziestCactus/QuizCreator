@@ -1,6 +1,8 @@
 # embedding_client.py
 
 from langchain_google_vertexai import VertexAIEmbeddings
+import os
+os.environ['GRPC_DNS_RESOLVER'] = 'native'
 
 class EmbeddingClient:
     """
@@ -33,9 +35,15 @@ class EmbeddingClient:
         # Initialize the VertexAIEmbeddings client with the given parameters
         # Read about the VertexAIEmbeddings wrapper from Langchain here
         # https://python.langchain.com/docs/integrations/text_embedding/google_generative_ai
-        self.client = VertexAIEmbeddings(
-            #### YOUR CODE HERE ####
-        )
+        try:
+            self.client = VertexAIEmbeddings(
+                model_name=model_name,
+                project=project,
+                location=location
+            )
+        except Exception as e:
+            print(f"Failed to initialize client: {e}")
+            self.client = None
         
     def embed_query(self, query):
         """
@@ -60,9 +68,16 @@ class EmbeddingClient:
             print("Method embed_documents not defined for the client.")
             return None
 
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\Cactus\\Downloads\\quizify-432223-e081a1e2931e.json"
+key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+if key_path:
+    print(f"Current service account key file: {key_path}")
+else:
+    print("GOOGLE_APPLICATION_CREDENTIALS is not set.")
+
 if __name__ == "__main__":
     model_name = "textembedding-gecko@003"
-    project = "YOUR PROJECT ID HERE"
+    project = "quizify-432223"
     location = "us-central1"
 
     embedding_client = EmbeddingClient(model_name, project, location)

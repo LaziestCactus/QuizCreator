@@ -1,9 +1,6 @@
 import sys
 import os
 import streamlit as st
-
-import re
-
 sys.path.append(os.path.abspath('../../'))
 from tasks.task_3.task_3 import DocumentProcessor
 from tasks.task_4.task_4 import EmbeddingClient
@@ -14,11 +11,6 @@ from langchain_core.documents import Document
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 
-os.environ['GRPC_DNS_RESOLVER'] = 'native'
-
-def clean_text(text):
-    # Remove non-printable characters
-    return re.sub(r'[^\x20-\x7E]', '', text)
 class ChromaCollectionCreator:
     def __init__(self, processor, embed_model):
         """
@@ -56,7 +48,7 @@ class ChromaCollectionCreator:
         Note: Ensure to replace placeholders like [Your code here] with actual implementation code as per the instructions above.
         """
         
-        # Check if the document exists
+        # Step 1: Check for processed documents
         if len(self.processor.pages) == 0:
             st.error("No documents found!", icon="🚨")
             return
@@ -70,12 +62,16 @@ class ChromaCollectionCreator:
             separator="\n\n",
             chunk_size=1000,
             chunk_overlap=200,
+            length_function=len,
+            is_separator_regex=False,
         )
-        texts = []
-        for doc in self.processor.pages:
-            chunk = text_splitter.split_text(doc.page_content)
-            texts.extend(chunk)
-        texts = [clean_text(doc) for doc in texts]
+
+        # print('look here')
+        # print(self.processor.pages)  # or use logging
+
+        aux_array = list(map(lambda page: page.page_content, self.processor.pages))
+        texts = text_splitter.create_documents(aux_array)
+
         if texts is not None:
             st.success(f"Successfully split pages to {len(texts)} documents!", icon="✅")
 
@@ -84,28 +80,26 @@ class ChromaCollectionCreator:
         # Create a Chroma in-memory client using the text chunks and the embeddings model
         # [Your code here for creating Chroma collection]
 
-        #cast to Document type
-        documents = []
-        for text in texts:
-            documents.append(Document(page_content=text))
-
         try:
-            self.db = Chroma.from_documents(documents=documents, embedding=self.embed_model)
+            self.db = Chroma.from_documents(texts, self.embed_model.client)
         except Exception as e:
-            for i, doc in enumerate(texts):
-                print(f"Document {i}: {doc}")
-                if len(doc) <= 10:
-                    print(f"Bad document found at index {i}!")
-                    raise e
             print("Error during Chroma.from_documents:")
             print(f"Number of documents: {len(texts)}")
-            raise e
+            for i, doc in enumerate(texts):
+                print(f"Document {i}: {doc}")
+            raise e  # Re-raise the exception after logging
+        
+
+        
         
         if self.db:
             st.success("Successfully created Chroma Collection!", icon="✅")
         else:
             st.error("Failed to create Chroma Collection!", icon="🚨")
     
+    def as_retriever(self):
+        return self.db.as_retriever()
+
     def query_chroma_collection(self, query) -> Document:
         """
         Queries the created Chroma collection for documents similar to the query.

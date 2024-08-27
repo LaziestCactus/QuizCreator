@@ -1,5 +1,3 @@
-# pdf_processing.py
-
 # Necessary imports
 import streamlit as st
 from langchain_community.document_loaders import PyPDFLoader
@@ -40,36 +38,31 @@ class DocumentProcessor:
         temp_file_name = f"{original_name}_{unique_id}{file_extension}"
         ```
         """
-        
-        # Step 1: Render a file uploader widget. Replace 'None' with the Streamlit file uploader code.
-        uploaded_files = st.file_uploader(
-            #####################################
-            # Allow only type `pdf`
-            # Allow multiple PDFs for ingestion
-            #####################################
-        )
+        #Create on streamlit, a file uploader widget to allow users to upload PDF files.
+        uploaded_files = st.file_uploader("Upload a PDF file", type="pdf", accept_multiple_files=True, help="You can upload multiple")
         
         if uploaded_files is not None:
             for uploaded_file in uploaded_files:
                 # Generate a unique identifier to append to the file's original name
-                unique_id = uuid.uuid4().hex
-                original_name, file_extension = os.path.splitext(uploaded_file.name)
-                temp_file_name = f"{original_name}_{unique_id}{file_extension}"
+                unique_id = uuid.uuid4().hex #hexadecimal string
+                original_name, file_extension = os.path.splitext(uploaded_file.name) #take out pdf
+                temp_file_name = f"{original_name}_{unique_id}{file_extension}" #example_123.pdf
                 temp_file_path = os.path.join(tempfile.gettempdir(), temp_file_name)
 
                 # Write the uploaded PDF to a temporary file
                 with open(temp_file_path, 'wb') as f:
-                    f.write(uploaded_file.getvalue())
+                    f.write(uploaded_file.getvalue()) #writes the binary content into the temp file-path
 
-                # Step 2: Process the temporary file
-                #####################################
-                # Use PyPDFLoader here to load the PDF and extract pages.
-                # https://python.langchain.com/docs/modules/data_connection/document_loaders/pdf#using-pypdf
-                # You will need to figure out how to use PyPDFLoader to process the temporary file.
+                # Use PyPDFLoader to load uploaded files and load them into "pages"
+                loader = PyPDFLoader(temp_file_path)
+                pages = loader.load()
+                num_pages = len(pages)
+                st.write(f"The PDF contains {num_pages} pages.")
                 
-                # Step 3: Then, Add the extracted pages to the 'pages' list.
-                #####################################
-                
+                # Append pages to pages list (locally)
+                for p in pages: 
+                    self.pages.append(p)
+
                 # Clean up by deleting the temporary file.
                 os.unlink(temp_file_path)
             
