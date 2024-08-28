@@ -67,8 +67,7 @@ class EmbeddingClient:
         except AttributeError:
             print("Method embed_documents not defined for the client.")
             return None
-
-os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = "C:\\Users\\Cactus\\Downloads\\quizify-432223-e081a1e2931e.json"
+        
 key_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
 if key_path:
     print(f"Current service account key file: {key_path}")
